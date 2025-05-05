@@ -40,3 +40,14 @@ src/
 │ └── helpers.js # Random positioning, collision detection
 ├── App.js
 └── main.jsx
+
+---
+
+## 📦 Installation & Setup (Local Development)
+
+```bash
+git clone https://github.com/yourusername/fb-live-match.git
+cd fb-live-match
+npm install
+npm run dev
+
