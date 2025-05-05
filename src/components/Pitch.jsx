@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import EventOverlay from "./EventOverlay";
 import Player from "./Player";
 import Ball from "./Ball";
@@ -28,37 +28,55 @@ export default function Pitch() {
   const [currentEvent, setCurrentEvent] = useState(null);
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
-  const goalAudio = new Audio(goalSound);
+
+  const goalAudioRef = useRef(new Audio(goalSound));
+  const ballRef = useRef(ball);
+  const playersRef = useRef(playerPositions);
+
+  useEffect(() => {
+    ballRef.current = ball;
+  }, [ball]);
+
+  useEffect(() => {
+    playersRef.current = playerPositions;
+  }, [playerPositions]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlayerPositions((prev) =>
-        prev.map((p) => ({
+      setPlayerPositions((prev) => {
+        const newPositions = prev.map((p) => ({
           ...p,
           x: getRandomPosition(p.x, 5, 95),
           y: getRandomPosition(p.y, 5, 95),
-        }))
+        }));
+        playersRef.current = newPositions;
+        return newPositions;
+      });
+
+      const ballHolder = playersRef.current.find((p) =>
+        isNear(p, ballRef.current)
       );
 
-      const ballHolder = playerPositions.find((p) => isNear(p, ball));
       if (ballHolder) {
         const newBall = {
           x: getRandomPosition(ballHolder.x, 0, 100),
           y: getRandomPosition(ballHolder.y, 0, 100),
         };
         setBall(newBall);
+        ballRef.current = newBall;
 
         if (newBall.x <= 3) {
           setAwayScore((s) => s + 1);
-          goalAudio.play();
+          goalAudioRef.current.play();
         } else if (newBall.x >= 97) {
           setHomeScore((s) => s + 1);
-          goalAudio.play();
+          goalAudioRef.current.play();
         }
       }
     }, 1000);
+
     return () => clearInterval(interval);
-  }, [playerPositions, ball]);
+  }, []);
 
   useEffect(() => {
     const eventTypes = ["goal", "foul", "sub", "start"];
@@ -71,9 +89,10 @@ export default function Pitch() {
 
   return (
     <div className="w-full flex justify-center items-center py-8 px-2">
-      <div className="relative bg-green-700 border-4 border-white rounded-xl overflow-hidden"
-        style={{ width: "100%", maxWidth: "800px", aspectRatio: "3 / 2" }}>
-
+      <div
+        className="relative bg-green-700 border-4 border-white rounded-xl overflow-hidden"
+        style={{ width: "100%", maxWidth: "800px", aspectRatio: "3 / 2" }}
+      >
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
           <div className="flex items-center gap-6 px-6 py-2 bg-black bg-opacity-70 rounded-xl shadow-md">
             <div className="flex items-center gap-2">
