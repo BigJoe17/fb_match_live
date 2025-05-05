@@ -2,120 +2,108 @@ import { useEffect, useState } from "react";
 import EventOverlay from "./EventOverlay";
 import Player from "./Player";
 import Ball from "./Ball";
+import goalSound from "../assets/sounds/Crowd-cheering.mp3";
 import { getRandomPosition, isNear } from "../utils/helpers";
 
-const homeTeam = Array.from({ length: 5 }, (_, i) => ({
-  id: i + 1,
-  x: Math.random() * 30 + 10,
-  y: Math.random() * 100,
-  color: "bg-blue-500",
-  team: "home",
-}));
-
-const awayTeam = Array.from({ length: 5 }, (_, i) => ({
-  id: i + 6,
-  x: Math.random() * 30 + 60,
-  y: Math.random() * 100,
-  color: "bg-red-500",
-  team: "away",
-}));
+const createPlayers = () => [
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: i + 1,
+    team: "home",
+    x: Math.random() * 90,
+    y: Math.random() * 100,
+    color: "bg-blue-500",
+  })),
+  ...Array.from({ length: 5 }, (_, i) => ({
+    id: i + 6,
+    team: "away",
+    x: Math.random() * 90,
+    y: Math.random() * 100,
+    color: "bg-red-500",
+  })),
+];
 
 export default function Pitch() {
-  const [playerPositions, setPlayerPositions] = useState([...homeTeam, ...awayTeam]);
+  const [playerPositions, setPlayerPositions] = useState(createPlayers);
   const [ball, setBall] = useState({ x: 50, y: 50 });
   const [currentEvent, setCurrentEvent] = useState(null);
-  const [ballHolder, setBallHolder] = useState(null);
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
-  const [isHomeTurn, setIsHomeTurn] = useState(true);
+  const goalAudio = new Audio(goalSound);
 
-  const playGoalSound = () => {
-    const audio = new Audio("/sounds/goal-cheer.mp3");
-    audio.play();
-  };
-
-  // Move players and ball
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlayerPositions((prevPlayers) =>
-        prevPlayers.map((player) => ({
-          ...player,
-          x: getRandomPosition(player.x, 5, 95),
-          y: getRandomPosition(player.y, 5, 95),
+      setPlayerPositions((prev) =>
+        prev.map((p) => ({
+          ...p,
+          x: getRandomPosition(p.x, 5, 95),
+          y: getRandomPosition(p.y, 5, 95),
         }))
       );
 
-      setBall((prev) => ({
-        x: getRandomPosition(prev.x, 5, 95),
-        y: getRandomPosition(prev.y, 5, 95),
-      }));
+      const ballHolder = playerPositions.find((p) => isNear(p, ball));
+      if (ballHolder) {
+        const newBall = {
+          x: getRandomPosition(ballHolder.x, 0, 100),
+          y: getRandomPosition(ballHolder.y, 0, 100),
+        };
+        setBall(newBall);
+
+        if (newBall.x <= 3) {
+          setAwayScore((s) => s + 1);
+          goalAudio.play();
+        } else if (newBall.x >= 97) {
+          setHomeScore((s) => s + 1);
+          goalAudio.play();
+        }
+      }
     }, 1000);
-
     return () => clearInterval(interval);
-  }, []);
-
-  // Check ball holder
-  useEffect(() => {
-    const holder = playerPositions.find((p) => isNear(p, ball));
-    setBallHolder(holder?.id ?? null);
   }, [playerPositions, ball]);
 
-  // Alternate team scoring every 15 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      const scoringTeam = isHomeTurn ? "home" : "away";
-      const player = playerPositions.find((p) => p.team === scoringTeam);
-
-      setCurrentEvent({
-        type: "goal",
-        player: player?.id,
-        team: scoringTeam,
-      });
-
-      playGoalSound();
-
-      if (scoringTeam === "home") {
-        setHomeScore((prev) => prev + 1);
-      } else {
-        setAwayScore((prev) => prev + 1);
-      }
-
-      setIsHomeTurn((prev) => !prev); // switch turn
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [isHomeTurn, playerPositions]);
+    const eventTypes = ["goal", "foul", "sub", "start"];
+    const eventInterval = setInterval(() => {
+      const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+      setCurrentEvent({ type, player: Math.floor(Math.random() * 10) + 1 });
+    }, 10000);
+    return () => clearInterval(eventInterval);
+  }, []);
 
   return (
     <div className="w-full flex justify-center items-center py-8 px-2">
-      <div
-        className="relative bg-green-700 border-4 border-white rounded-xl overflow-hidden"
-        style={{
-          width: "100%",
-          maxWidth: "800px",
-          aspectRatio: "3 / 2",
-        }}
-      >
-        {/* Live Score Display */}
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-60 text-white px-4 py-1 rounded-md text-sm font-bold z-10">
-          🏠 {homeScore} - {awayScore} 🟥
+      <div className="relative bg-green-700 border-4 border-white rounded-xl overflow-hidden"
+        style={{ width: "100%", maxWidth: "800px", aspectRatio: "3 / 2" }}>
+
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="flex items-center gap-6 px-6 py-2 bg-black bg-opacity-70 rounded-xl shadow-md">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-blue-500 rounded-full shadow-lg border-2 border-white" />
+              <span className="text-white font-bold text-sm">HOME</span>
+            </div>
+            <div className="text-white font-extrabold text-xl tracking-wider">
+              {homeScore} - {awayScore}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-white font-bold text-sm">AWAY</span>
+              <div className="w-6 h-6 bg-red-500 rounded-full shadow-lg border-2 border-white" />
+            </div>
+          </div>
         </div>
 
-        {/* Field Markings */}
-        <div className="absolute top-0 left-1/2 w-[2px] h-full bg-white transform -translate-x-1/2" />
-        <div className="absolute top-1/2 left-1/2 w-[15%] h-[15%] border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute top-[25%] left-0 w-[2%] h-[50%] border-2 border-white" />
-        <div className="absolute top-[25%] right-0 w-[2%] h-[50%] border-2 border-white" />
+        <div className="absolute top-0 left-1/2 w-1 h-full bg-white transform -translate-x-1/2" />
+        <div className="absolute top-1/2 left-1/2 w-20 h-20 border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-1/4 left-0 w-6 h-1/2 border-2 border-white" />
+        <div className="absolute top-1/4 right-0 w-6 h-1/2 border-2 border-white" />
 
-        {/* Players */}
         {playerPositions.map((player) => (
-          <Player key={player.id} player={player} isBallHolder={player.id === ballHolder} />
+          <Player
+            key={player.id}
+            player={player}
+            isBallHolder={isNear(player, ball)}
+          />
         ))}
 
-        {/* Ball */}
         <Ball position={ball} />
-
-        {/* Event Overlay */}
         <EventOverlay event={currentEvent} />
       </div>
     </div>

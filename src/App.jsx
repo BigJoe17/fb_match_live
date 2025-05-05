@@ -8,7 +8,7 @@ export default function App() {
         Football Dashboard
       </h1>
       <div className="flex justify-center items-center h-screen">
-        <Pitch />
+   <Pitch/>
       </div>
    </div>
   )
