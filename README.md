@@ -23,10 +23,20 @@ Welcome to **FB Live Match**, a fun and dynamic football simulation web app that
 
 - **React** (Vite)
 - **Tailwind CSS** for styling
-- **HTML5 Audio API** for sound
+- **PixaBay Audio API** for sound
 - **Netlify** for deployment
 
 ---
 
 ## 📂 Project Structure
-
+src/
+├── assets/ # Sounds, images
+├── components/
+│ ├── Ball.js
+│ ├── EventOverlay.js
+│ ├── Pitch.js
+│ └── Player.js
+├── utils/
+│ └── helpers.js # Random positioning, collision detection
+├── App.js
+└── main.jsx
