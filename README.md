@@ -28,20 +28,7 @@ Welcome to **FB Live Match**, a fun and dynamic football simulation web app that
 
 ---
 
-## 📂 Project Structure
-src/
-├── assets/ # Sounds, images
-├── components/
-│ ├── Ball.js
-│ ├── EventOverlay.js
-│ ├── Pitch.js
-│ └── Player.js
-├── utils/
-│ └── helpers.js # Random positioning, collision detection
-├── App.js
-└── main.jsx
 
----
 
 ## 📦 Installation & Setup (Local Development)
 
